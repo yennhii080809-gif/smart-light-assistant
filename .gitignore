@@ -1,0 +1,21 @@
+# Arduino IDE
+*.bak
+*.tmp
+
+# Arduino build files
+build/
+build_*/
+
+# VS Code
+.vscode/
+
+# PlatformIO
+.pio/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp
+*.swo
