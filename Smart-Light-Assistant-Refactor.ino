@@ -7,19 +7,6 @@
 #include <esp_task_wdt.h> // Thư viện Watchdog Timer
 
 // ==========================================
-// CẤU HÌNH SỐ LƯỢNG FILE MP3 TRONG THƯ MỤC "mp3"
-// ==========================================
-#define TRACK_VESINH         1  // File 0001.mp3: Nhắc nhở giữ vệ sinh
-#define PLAYLIST_START_INDEX 2  // Playlist nhạc nền bắt đầu từ file 0002.mp3
-#define PLAYLIST_TOTAL_SONGS 21 // Tổng cộng có 21 bài nhạc nền (đến file 0022.mp3)
-
-// Định nghĩa thời gian Watchdog (Hệ thống treo quá 8 giây sẽ tự reset)
-#define WDT_TIMEOUT_SECONDS 8 
-
-// Định nghĩa chu kỳ tự động Reset (24 giờ = 86400000 ms)
-#define AUTO_RESET_INTERVAL 86400000ULL 
-
-// ==========================================
 // KHỞI TẠO ĐỐI TƯỢNG VÀ BIẾN TOÀN CỤC
 // ==========================================
 WebServer server(80);
@@ -43,8 +30,6 @@ bool lastPIRState = LOW;
 bool stablePIRState = LOW;
 unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50; // 50ms ổn định trạng thái
-
-#define GREETING_COOLDOWN 30000 // 30 giây chống lặp lời nhắc giữ vệ sinh
 
 // Cập nhật lại các trạng thái logic mới
 enum SystemState { IDLE, PLAYING_GREETING, PLAYING_MUSIC };
