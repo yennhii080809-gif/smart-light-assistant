@@ -18,9 +18,8 @@ volatile bool trackFinished = false;
 const char* apSSID = "ESP32C3_Smart_System";
 const char* apPassword = "12345678";
 
-unsigned long configTimeoutMs = 30000; // Mặc định ban đầu 30 giây
-int currentVolumePercent = 80;         
-
+unsigned long configTimeoutMs = DEFAULT_TIMEOUT_SECONDS * 1000UL; //Chỉ thay giá trị khởi tạo, không đổi tên biến.
+int currentVolumePercent = DEFAULT_VOLUME_PERCENT;
 unsigned long lastMotionTime = 0;
 unsigned long lastGreetingTime = 0;
 unsigned long lastResetTime = 0; // Quản lý mốc thời gian reset 24h
@@ -29,7 +28,7 @@ unsigned long lastResetTime = 0; // Quản lý mốc thời gian reset 24h
 bool lastPIRState = LOW;
 bool stablePIRState = LOW;
 unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = 50; // 50ms ổn định trạng thái
+const unsigned long debounceDelay = DEBOUNCE_DELAYS_MS; //Lý do: DEBOUNCE_DELAY_MS hiện đã nằm trong Config.h, nên giá trị 50 được quản lý tập trung ở đó.
 
 // Cập nhật lại các trạng thái logic mới
 enum SystemState { IDLE, PLAYING_GREETING, PLAYING_MUSIC };
