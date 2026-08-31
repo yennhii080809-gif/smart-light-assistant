@@ -7,17 +7,6 @@
 #include <esp_task_wdt.h> // Thư viện Watchdog Timer
 
 // ==========================================
-// CẤU HÌNH PHẦN CỨNG CHO ESP32-C3 SUPER MINI
-// ==========================================
-#define PIR_PIN       1     // GPIO 1 
-#define RELAY_PIN     3     // GPIO 3
-#define RELAY_ON      HIGH
-#define RELAY_OFF     LOW
-
-#define DFPLAYER_RX   20     // GPIO 20 -> TX của DFPlayer
-#define DFPLAYER_TX   21     // GPIO 21 -> RX của DFPlayer
-
-// ==========================================
 // CẤU HÌNH SỐ LƯỢNG FILE MP3 TRONG THƯ MỤC "mp3"
 // ==========================================
 #define TRACK_VESINH         1  // File 0001.mp3: Nhắc nhở giữ vệ sinh
