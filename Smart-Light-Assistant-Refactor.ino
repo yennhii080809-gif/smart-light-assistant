@@ -4,6 +4,7 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include "DFPlayerManager.h"
+#include "PIRManager.h"
 #include <esp_task_wdt.h> // Thư viện Watchdog Timer
 
 // ==========================================
@@ -13,6 +14,7 @@ WebServer server(80);
 Preferences preferences;
 HardwareSerial SerialData(1); // Sử dụng UART1 của ESP32-C3
 DFPlayerManager dfPlayer(SerialData);
+PIRManager pir(PIR_PIN);
 
 const char* apSSID = AP_SSID;
 const char* apPassword = AP_PASSWORD;
@@ -22,12 +24,6 @@ int currentVolumePercent = DEFAULT_VOLUME_PERCENT;
 unsigned long lastMotionTime = 0;
 unsigned long lastGreetingTime = 0;
 unsigned long lastResetTime = 0; // Quản lý mốc thời gian reset 24h
-
-// Các biến phục vụ việc chống nhiễu PIR (Debounce)
-bool lastPIRState = LOW;
-bool stablePIRState = LOW;
-unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = DEBOUNCE_DELAY_MS; // Giá trị debounce được quản lý tập trung trong Config.h.
 
 // Cập nhật lại các trạng thái logic mới
 enum SystemState { IDLE, PLAYING_GREETING, PLAYING_MUSIC };
@@ -207,7 +203,7 @@ void handleSetConfig() {
 void setup() {
     Serial.begin(115200);
 
-    pinMode(PIR_PIN, INPUT);
+    pir.begin();
     pinMode(RELAY_PIN, OUTPUT);
     digitalWrite(RELAY_PIN, RELAY_OFF);
 
@@ -271,19 +267,7 @@ void loop() {
         esp_restart();
     }
 
-    // --- THUẬT TOÁN CHỐNG NHIỄU (DEBOUNCE) CHO PIR ---
-    bool reading = (digitalRead(PIR_PIN) == HIGH);
-    if (reading != lastPIRState) {
-        lastDebounceTime = now;
-    }
-    if ((now - lastDebounceTime) > debounceDelay) {
-        if (reading != stablePIRState) {
-            stablePIRState = reading;
-        }
-    }
-    lastPIRState = reading;
-    
-    bool motionDetected = stablePIRState;
+    bool motionDetected = pir.update();
 
     switch (currentState) {
         
