@@ -15,8 +15,8 @@ HardwareSerial SerialData(1); // Sử dụng UART1 của ESP32-C3
 DFRobotDFPlayerMini myDFPlayer;
 volatile bool trackFinished = false;
 
-const char* apSSID = "ESP32C3_Smart_System";
-const char* apPassword = "12345678";
+const char* apSSID = AP_SSID;
+const char* apPassword = AP_PASSWORD;
 
 unsigned long configTimeoutMs = DEFAULT_TIMEOUT_SECONDS * 1000UL; //Chỉ thay giá trị khởi tạo, không đổi tên biến.
 int currentVolumePercent = DEFAULT_VOLUME_PERCENT;
@@ -335,56 +335,37 @@ void loop() {
                 lastMotionTime = now;
 
                 if (now - lastGreetingTime >= GREETING_COOLDOWN) {
-                    Serial.println("PHAT LOI NHAC >>> PLAY 0001");
                     myDFPlayer.playMp3Folder(TRACK_VESINH);
-                    delay(300);
                     lastGreetingTime = now;
                     currentState = PLAYING_GREETING;
                 } else {
-                    Serial.println("PHAT NHAC >>> PLAY RANDOM");
-                    playRandomBackgroundMusic();
                     currentState = PLAYING_MUSIC;
+                    playRandomBackgroundMusic();
                 }
             }
             break;
 
         case PLAYING_GREETING:
-            if (motionDetected) {
-                lastMotionTime = now; // Cập nhật liên tục khi có người di chuyển
-            }
-
-            // Kiểm tra xem lời nhắc vệ sinh đã phát xong chưa
             if (trackFinished) {
                 trackFinished = false;
-                Serial.println(F("[FSM] Lời nhắc phát xong -> Chuyển sang nhạc nền"));
-                delay(150);   // Cho DFPlayer ổn định
-                playRandomBackgroundMusic();
                 currentState = PLAYING_MUSIC;
+                playRandomBackgroundMusic();
+            }
+            if (now - lastMotionTime >= configTimeoutMs) {
+                digitalWrite(RELAY_PIN, RELAY_OFF);
+                myDFPlayer.stop();
+                currentState = IDLE;
             }
             break;
 
         case PLAYING_MUSIC:
-            if (motionDetected) {
-                lastMotionTime = now; // Nếu vẫn có người di chuyển, reset mốc đếm thời gian timeout
-            }
-
-            // ĐIỀU KIỆN 1: HẾT THỜI GIAN CHỜ (Cường độ di chuyển bằng 0 sau khoảng configTimeoutMs)
-            // Sẽ TẮT NGAY LẬP TỨC bất kể bài hát đã hết hay chưa
             if (now - lastMotionTime >= configTimeoutMs) {
-                Serial.println(F("[FSM] Hết thời gian chờ thiết lập -> Ngắt Relay, dừng nhạc và về IDLE."));
-                myDFPlayer.stop();
-                trackFinished = false; // Xóa cờ thừa nếu có
                 digitalWrite(RELAY_PIN, RELAY_OFF);
+                myDFPlayer.stop();
                 currentState = IDLE;
-            }
-            // ĐIỀU KIỆN 2: NẾU HẾT BÀI NHƯNG VẪN TRONG THỜI GIAN CHO PHÉP (Vẫn còn người)
-            // Thì tự động gối tiếp bài mới
-            else if (trackFinished) {
-                trackFinished = false; // Reset cờ để chuẩn bị bài mới
-                Serial.println(F("[FSM] Hết bài nhưng vẫn trong thời gian chờ -> Chuyển bài ngẫu nhiên tiếp theo."));
-                delay(150); 
-                playRandomBackgroundMusic();
             }
             break;
     }
+
+    delay(10);
 }
