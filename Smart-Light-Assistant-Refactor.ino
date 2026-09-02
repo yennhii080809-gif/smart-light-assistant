@@ -28,7 +28,7 @@ unsigned long lastResetTime = 0; // Quản lý mốc thời gian reset 24h
 bool lastPIRState = LOW;
 bool stablePIRState = LOW;
 unsigned long lastDebounceTime = 0;
-const unsigned long debounceDelay = DEBOUNCE_DELAYS_MS; //Lý do: DEBOUNCE_DELAY_MS hiện đã nằm trong Config.h, nên giá trị 50 được quản lý tập trung ở đó.
+const unsigned long debounceDelay = DEBOUNCE_DELAY_MS; // Giá trị debounce được quản lý tập trung trong Config.h.
 
 // Cập nhật lại các trạng thái logic mới
 enum SystemState { IDLE, PLAYING_GREETING, PLAYING_MUSIC };
