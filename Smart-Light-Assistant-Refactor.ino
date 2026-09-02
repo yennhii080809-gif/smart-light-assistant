@@ -3,7 +3,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
-#include "DFRobotDFPlayerMini.h"
+#include "DFPlayerManager.h"
 #include <esp_task_wdt.h> // Thư viện Watchdog Timer
 
 // ==========================================
@@ -12,8 +12,7 @@
 WebServer server(80);
 Preferences preferences;
 HardwareSerial SerialData(1); // Sử dụng UART1 của ESP32-C3
-DFRobotDFPlayerMini myDFPlayer;
-volatile bool trackFinished = false;
+DFPlayerManager dfPlayer(SerialData);
 
 const char* apSSID = AP_SSID;
 const char* apPassword = AP_PASSWORD;
@@ -167,11 +166,6 @@ const char HTML_INDEX[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
-void applyVolume(int volumePercent) {
-    int dfVolume = map(volumePercent, 0, 100, 0, 30);
-    myDFPlayer.volume(dfVolume);
-}
-
 void handleRoot() {
     server.send_P(200, "text/html", HTML_INDEX);
 }
@@ -190,7 +184,8 @@ void handleSetConfig() {
         int t = server.arg("timeout").toInt(); 
         int v = server.arg("volume").toInt();
 
-        if (t >= 30 && t <= 180 && v >= 0 && v <= 100) {
+        if (t >= MIN_TIMEOUT_SECONDS && t <= MAX_TIMEOUT_SECONDS &&
+            v >= MIN_VOLUME_PERCENT && v <= MAX_VOLUME_PERCENT) {
             configTimeoutMs = (unsigned long)t * 1000; 
             currentVolumePercent = v;
 
@@ -199,7 +194,7 @@ void handleSetConfig() {
             preferences.putInt("volume", v);
             preferences.end();
 
-            applyVolume(currentVolumePercent);
+            dfPlayer.setVolumePercent(currentVolumePercent);
 
             Serial.printf("[SETTINGS] Cập nhật -> Chờ: %d giây | Vol: %d%%\n", t, v);
             server.send(200, "text/plain", "Đã lưu cấu hình mới thành công!");
@@ -209,44 +204,8 @@ void handleSetConfig() {
     server.send(400, "text/plain", "Dữ liệu cấu hình không hợp lệ!");
 }
 
-void checkDFPlayerFeedback() {
-    if (myDFPlayer.available()) {
-        uint8_t type = myDFPlayer.readType();
-        int value = myDFPlayer.read();
-
-        switch (type) {
-
-        case DFPlayerPlayFinished:
-            Serial.printf("[DFPLAYER] File %04d phát xong\n", value);
-            trackFinished = true;
-            break;
-
-        case DFPlayerError:
-            Serial.printf("[DFPLAYER ERROR] Mã lỗi: %d\n", value);
-            break;
-        }
-    }
-}
-
-// Hàm kiểm tra module có đang phát nhạc hay không
-bool isMusicPlaying() {
-    int state = myDFPlayer.readState();
-
-    Serial.printf("[DFPLAYER] State = %d\n", state);
-
-    return (state == 512 || state == 513 || state == 1);
-}
-
-// Hàm hỗ trợ bốc bài hát ngẫu nhiên từ Playlist
-void playRandomBackgroundMusic() {
-    int randomTrack = random(PLAYLIST_START_INDEX, PLAYLIST_START_INDEX + PLAYLIST_TOTAL_SONGS); 
-    Serial.printf("[FSM] Tiến hành phát nhạc nền ngẫu nhiên file số: %04d.mp3\n", randomTrack);
-    myDFPlayer.playMp3Folder(randomTrack);
-}
-
 void setup() {
     Serial.begin(115200);
-    SerialData.begin(9600, SERIAL_8N1, DFPLAYER_RX, DFPLAYER_TX);
 
     pinMode(PIR_PIN, INPUT);
     pinMode(RELAY_PIN, OUTPUT);
@@ -273,10 +232,10 @@ void setup() {
     server.begin();
 
     delay(1000); 
-    if (!myDFPlayer.begin(SerialData)) {
+    if (!dfPlayer.begin()) {
         Serial.println(F("[DFPLAYER] Không tìm thấy module hoặc thẻ nhớ!"));
     } else {
-        applyVolume(currentVolumePercent);
+        dfPlayer.setVolumePercent(currentVolumePercent);
         Serial.println(F("[DFPLAYER] Sẵn sàng đọc file từ thư mục mp3."));
     }
     
@@ -302,7 +261,7 @@ void setup() {
 void loop() {
     esp_task_wdt_reset(); 
     server.handleClient(); 
-    checkDFPlayerFeedback(); 
+    dfPlayer.handleFeedback(); 
 
     unsigned long now = millis();
 
@@ -335,25 +294,24 @@ void loop() {
                 lastMotionTime = now;
 
                 if (now - lastGreetingTime >= GREETING_COOLDOWN) {
-                    myDFPlayer.playMp3Folder(TRACK_VESINH);
+                    dfPlayer.playGreeting();
                     lastGreetingTime = now;
                     currentState = PLAYING_GREETING;
                 } else {
                     currentState = PLAYING_MUSIC;
-                    playRandomBackgroundMusic();
+                    dfPlayer.playRandomBackgroundMusic();
                 }
             }
             break;
 
         case PLAYING_GREETING:
-            if (trackFinished) {
-                trackFinished = false;
+            if (dfPlayer.consumeTrackFinished()) {
                 currentState = PLAYING_MUSIC;
-                playRandomBackgroundMusic();
+                dfPlayer.playRandomBackgroundMusic();
             }
             if (now - lastMotionTime >= configTimeoutMs) {
                 digitalWrite(RELAY_PIN, RELAY_OFF);
-                myDFPlayer.stop();
+                dfPlayer.stop();
                 currentState = IDLE;
             }
             break;
@@ -361,7 +319,7 @@ void loop() {
         case PLAYING_MUSIC:
             if (now - lastMotionTime >= configTimeoutMs) {
                 digitalWrite(RELAY_PIN, RELAY_OFF);
-                myDFPlayer.stop();
+                dfPlayer.stop();
                 currentState = IDLE;
             }
             break;
