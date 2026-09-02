@@ -33,6 +33,12 @@
 #define DEFAULT_VOLUME_PERCENT  80
 #define DEBOUNCE_DELAY_MS       50
 
+// Configuration limits
+#define MIN_TIMEOUT_SECONDS     30
+#define MAX_TIMEOUT_SECONDS     180
+#define MIN_VOLUME_PERCENT      0
+#define MAX_VOLUME_PERCENT      100
+
 // ==========================================
 // Wi-Fi Access Point
 // ==========================================
