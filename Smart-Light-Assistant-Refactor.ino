@@ -253,8 +253,8 @@ void setup() {
     digitalWrite(RELAY_PIN, RELAY_OFF);
 
     preferences.begin("sys-config", true);
-    int savedSeconds = preferences.getInt("timeout", 30);  
-    int savedVolume = preferences.getInt("volume", 80);   
+    int savedSeconds = preferences.getInt("timeout", DEFAULT_TIMEOUT_SECONDS);
+    int savedVolume = preferences.getInt("volume", DEFAULT_VOLUME_PERCENT);
     preferences.end();
 
     configTimeoutMs = (unsigned long)savedSeconds * 1000;
