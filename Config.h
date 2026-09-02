@@ -11,6 +11,7 @@
 
 #define DFPLAYER_RX   20
 #define DFPLAYER_TX   21
+#define DFPLAYER_BAUDRATE 9600
 
 // ==========================================
 // MP3 configuration
